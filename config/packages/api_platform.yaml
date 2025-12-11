@@ -1,0 +1,34 @@
+api_platform:
+    title: 'Go Live API'
+    description: 'API for Go Live application with user management, posts, and subscription plans'
+    version: '1.0.0'
+
+    # Enable Swagger UI
+    enable_swagger_ui: true
+    enable_docs: true
+
+    # OpenAPI configuration
+    openapi:
+        contact:
+            name: 'API Support'
+            email: 'support@example.com'
+        termsOfService: 'https://example.com/terms'
+
+    defaults:
+        stateless: true
+        cache_headers:
+            vary: ['Content-Type', 'Authorization', 'Origin']
+
+    # Formats
+    formats:
+        jsonld: ['application/ld+json']
+        json: ['application/json']
+        html: ['text/html']
+
+    # Swagger UI customization
+    swagger:
+        versions: [3]
+        api_keys:
+            JWT:
+                name: Authorization
+                type: header
