@@ -26,34 +26,34 @@ use App\Entity\Posts;
 
 #[ORM\Entity]
 #[ORM\Table(name: '`user`')]
-#[UniqueEntity(fields: 'email', message: 'Email already exists', groups: ['user:write'])]
+#[UniqueEntity(fields: 'email', message: 'Email already exists', groups: ['User:W$Register'])]
 #[ApiResource(
     operations: [
         new Get(
             security: "is_granted('ROLE_USER') and object == user",
-            normalizationContext: ['groups' => ['user:read']]
+            normalizationContext: ['groups' => ['User:V$Detail']]
         ),
         new Post(
             uriTemplate: '/auth/register',
-            normalizationContext: ['groups' => ['user:read', 'User:V$Register']],
-            denormalizationContext: ['groups' => ['user:write']],
-            validationContext: ['groups' => ['user:write']],
+            normalizationContext: ['groups' => ['User:V$Register']],
+            denormalizationContext: ['groups' => ['User:W$Register']],
+            validationContext: ['groups' => ['Valid(User:W$Register)']],
             // output: UserOutput::class, //no output when return
             output: false,
             processor: UserRegistrationProcessor::class
         ),
         new Post(
             uriTemplate: '/auth/login',
-            denormalizationContext: ['groups' => ['user:login']],
-            validationContext: ['groups' => ['user:login']],
+            denormalizationContext: ['groups' => ['User:W$Login']],
+            validationContext: ['groups' => ['Valid(User:W$Login)']],
             output: false,
             processor: UserLoginProcessor::class
         ),
-        new Patch(
-            security: "is_granted('ROLE_USER') and object == user",
-            denormalizationContext: ['groups' => ['user:update']],
-            processor: UserPasswordHasher::class
-        ),
+        // new Patch(
+        //     security: "is_granted('ROLE_USER') and object == user",
+        //     denormalizationContext: ['groups' => ['user:update']],
+        //     processor: UserPasswordHasher::class
+        // ),
     ],
 )]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
@@ -62,53 +62,53 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: 'uuid', unique: true)]
     #[ORM\GeneratedValue(strategy: 'CUSTOM')]
     #[ORM\CustomIdGenerator(class: 'doctrine.uuid_generator')]
-    #[Serializer\Groups(['user:read'])]
+    #[Serializer\Groups(['User:V$Detail', 'User:V$Register'])]
     public string $id;
 
     #[ORM\Column(length: 180, unique: true)]
-    #[Assert\NotBlank(groups: ['user:write', 'user:login'])]
-    #[Assert\Email(groups: ['user:write', 'user:login'])]
-    #[Serializer\Groups(['user:read', 'user:write', 'user:login'])]
+    #[Assert\NotBlank(groups: ['Valid(User:W$Register)', 'Valid(User:W$Login)'])]
+    #[Assert\Email(groups: ['Valid(User:W$Register)', 'Valid(User:W$Login)'])]
+    #[Serializer\Groups(['User:V$Detail', 'User:V$Register', 'User:W$Register', 'User:W$Login'])]
     public string $email;
 
     #[ORM\Column(length: 255)]
-    #[Assert\NotBlank(groups: ['user:write'])]
-    #[Serializer\Groups(['user:read', 'user:write'])]
+    #[Assert\NotBlank(groups: ['Valid(User:W$Register)'])]
+    #[Serializer\Groups(['User:V$Detail', 'User:V$Register', 'User:W$Register'])]
     public string $name;
 
     #[ORM\Column]
     public string $password;
 
-    #[Assert\NotBlank(groups: ['user:write', 'user:login'])]
-    #[Serializer\Groups(['user:write', 'user:login'])]
+    #[Assert\NotBlank(groups: ['Valid(User:W$Register)', 'Valid(User:W$Login)'])]
+    #[Serializer\Groups(['User:W$Register', 'User:W$Login'])]
     public ?string $plainPassword;
 
     #[ORM\Column(length: 20)]
     #[Assert\Choice(choices: ['user', 'admin'])]
-    #[Serializer\Groups(['user:read'])]
+    #[Serializer\Groups(['User:V$Detail', 'User:V$Register'])]
     public string $role = 'user';
 
     #[ORM\Column(length: 20)]
-    #[Serializer\Groups(['user:read'])]
+    #[Serializer\Groups(['User:V$Detail', 'User:V$Register'])]
     public string $active = 'pending';
 
     #[ORM\Column(length: 255, nullable: true)]
     public ?string $stripeCustomerId = null;
 
     #[ORM\Column(length: 255, nullable: true)]
-    #[Serializer\Groups(['user:read'])]
+    #[Serializer\Groups(['User:V$Detail', 'User:V$Register'])]
     public ?string $subscription = null;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
-    #[Serializer\Groups(['user:read'])]
+    #[Serializer\Groups(['User:V$Detail', 'User:V$Register'])]
     public ?\DateTimeImmutable $subscriptionEnd = null;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
-    #[Serializer\Groups(['user:read'])]
+    #[Serializer\Groups(['User:V$Detail', 'User:V$Register'])]
     public \DateTimeImmutable $createdAt;
 
     #[ORM\OneToMany(mappedBy: 'user_id', targetEntity: Posts::class)]
-    #[Serializer\Groups(['user:read', 'user:$Vpost'])]
+    #[Serializer\Groups(['User:V$Detail', 'User:V$Register', 'user:$Vpost'])]
     public Collection $posts;
 
     public function __construct()
@@ -117,9 +117,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->active = 'pending';
         $this->createdAt = new \DateTimeImmutable();
         $this->plainPassword = null;
-        $this->stripeCustomerId = null;
-        $this->subscription = null;
-        $this->subscriptionEnd = null;
+        // $this->stripeCustomerId = null;
+        // $this->subscription = null;
+        // $this->subscriptionEnd = null;
         $this->posts = new ArrayCollection();
     }
 

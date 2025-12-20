@@ -26,5 +26,5 @@
 ###> phpstan/phpstan ###
 phpstan.neon
 ###< phpstan/phpstan ###
-.env
-.env.local
+config.bat
+node_modules

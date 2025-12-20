@@ -11,7 +11,10 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpKernel\Exception\UnauthorizedHttpException;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Doctrine\ORM\EntityManagerInterface;
-
+use Webmozart\Assert\Assert;
+/**
+ * @implements ProcessorInterface<User, JsonResponse>
+ */
 class UserLoginProcessor implements ProcessorInterface
 {
     public function __construct(
@@ -23,17 +26,13 @@ class UserLoginProcessor implements ProcessorInterface
 
     public function process(mixed $data, Operation $operation, array $uriVariables = [], array $context = []): JsonResponse
     {
-        if (!$data instanceof User) {
-            throw new BadRequestException('Invalid data provided');
-        }
 
-        // $data contains email and plainPassword from the request
+        Assert::isInstanceOf($data, User::class, 'Expected User entity');
         $email = $data->email;
         $plainPassword = $data->plainPassword;
 
-        if (!$email || !$plainPassword) {
-            throw new BadRequestException('Email and password are required');
-        }
+        Assert::notEmpty($email, 'Email is required');
+        Assert::notEmpty($plainPassword, 'Password is required');
 
         // Find user by email
         $user = $this->entityManager->getRepository(User::class)->findOneBy(['email' => $email]);

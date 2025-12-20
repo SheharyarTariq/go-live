@@ -4,6 +4,6 @@ namespace App\Enum;
 
 enum PostType: string
 {
-    case BLOG = 'blog';
-    case VIDEO = 'video';
+    case blog = 'blog';
+    case video = 'video';
 }
