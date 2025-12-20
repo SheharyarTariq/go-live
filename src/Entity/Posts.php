@@ -19,7 +19,7 @@ use ApiPlatform\Metadata\Link;
 use ApiPlatform\Metadata\ApiProperty;
 use ApiPlatform\Metadata\ApiSubresource;
 use Doctrine\Common\Collections\Collection;
-use App\Entity\Comments;
+use App\Entity\Comment;
 use Doctrine\Common\Collections\ArrayCollection;
 
 #[ORM\Entity]
@@ -28,40 +28,34 @@ use Doctrine\Common\Collections\ArrayCollection;
 #[ApiResource(
     operations: [
         new GetCollection(
-            uriTemplate: '/posts',
             security: "is_granted('ROLE_USER')",
-            normalizationContext: ['groups' => ['posts:V$post']],
+            normalizationContext: ['groups' => ['Posts:V$List']],
         ),
         new Get(
-            uriTemplate: '/posts/{id}',
             security: "is_granted('ROLE_USER') and object.user_id == user",
-            normalizationContext: ['groups' => ['posts:V$post']],
+            normalizationContext: ['groups' => ['Posts:V$Detail']],
         ),
         new Post(
-            uriTemplate: '/posts',
             processor: \App\State\PostProcessor::class,
-            normalizationContext: ['groups' => ['posts:V$post']],
-            denormalizationContext: ['groups' => ['posts:W$post']],
-            validationContext: ['groups' => ['posts:W$post']],
+            normalizationContext: ['groups' => ['Posts:V$Create']],
+            denormalizationContext: ['groups' => ['Posts:W$Create']],
+            validationContext: ['groups' => ['Default', 'Valid(Posts:W$Create)']],
         ),
         new Put(
-            uriTemplate: '/posts/{id}',
-            processor: \App\State\PostProcessor::class,
+            processor: \App\State\PostUpdateProcessor::class,
             security: "is_granted('ROLE_USER')",
-            normalizationContext: ['groups' => ['posts:V$post']],
-            denormalizationContext: ['groups' => ['posts:W$post']],
-            validationContext: ['groups' => ['posts:W$post']],
+            normalizationContext: ['groups' => ['Posts:V$Update']],
+            denormalizationContext: ['groups' => ['Posts:W$Update']],
+            validationContext: ['groups' => ['Default', 'Valid(Posts:W$Update)']],
         ),
         new Delete(
-            uriTemplate: '/posts/{id}',
             security: "is_granted('ROLE_USER') and object.user_id == user",
-            denormalizationContext: ['groups' => ['posts:delete']],
         ),
         new GetCollection(
             uriTemplate: '/users/posts',
             security: "is_granted('ROLE_USER')",
             provider: \App\State\UserPostsProvider::class,
-            normalizationContext: ['groups' => ['posts:V$post']],
+            normalizationContext: ['groups' => ['Posts:V$List']],
         ),
 
     ],
@@ -70,7 +64,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 #[UniqueEntity(
     fields: ['title'],
     message: 'This title already exists. Please choose a different title.',
-    groups: ['posts:W$post']
+    groups: ['Valid(Posts:W$Create)', 'Valid(Posts:W$Update)']
 )]
 class Posts
 {
@@ -78,46 +72,46 @@ class Posts
     #[ORM\Column(type: 'uuid', unique: true)]
     #[ORM\GeneratedValue(strategy: 'CUSTOM')]
     #[ORM\CustomIdGenerator(class: 'doctrine.uuid_generator')]
-    #[Serializer\Groups(['posts:V$post'])]
+    #[Serializer\Groups(['Posts:V$Detail', 'Posts:V$List', 'Posts:V$Create'])]
     public string $id;
 
     #[ORM\ManyToOne(targetEntity: User::class, inversedBy: 'posts')]
     #[ORM\JoinColumn(nullable: false)]
-    // #[Assert\NotNull(groups: ['posts:W$post'])]
+    // #[Assert\NotNull(groups: ['Posts:W$Create'])]
     #[Serializer\Groups(['posts:V$user'])]
     public User $user_id;
 
     #[ORM\Column(length: 180, unique: true)]
-    #[Assert\NotBlank(groups: ['posts:W$post'])]
-    #[Serializer\Groups(['posts:V$post', 'posts:W$post'])]
+    #[Assert\NotBlank(groups: ['Valid(Posts:W$Create)'])]
+    #[Serializer\Groups(['Posts:V$Detail', 'Posts:V$List', 'Posts:V$Create', 'Posts:V$Update', 'Posts:W$Create',  'Posts:W$Update'])]
     public string $title;
 
     #[ORM\Column(length: 255)]
-    #[Assert\NotBlank(groups: ['posts:W$post'])]
-    #[Serializer\Groups(['posts:V$post', 'posts:W$post'])]
+    #[Assert\NotBlank(groups: ['Valid(Posts:W$Create)'])]
+    #[Serializer\Groups(['Posts:V$Detail', 'Posts:V$List', 'Posts:V$Create', 'Posts:V$Update', 'Posts:W$Create',  'Posts:W$Update'])]
     public string $content;
 
     #[ORM\Column(enumType: PostType::class)]
-    #[Assert\NotNull(groups: ['posts:W$post'])]
-    #[Serializer\Groups(['posts:V$post', 'posts:W$post'])]
+    #[Assert\NotNull(groups: ['Valid(Posts:W$Create)'])]
+    #[Serializer\Groups(['Posts:V$Detail', 'Posts:V$List', 'Posts:V$Create', 'Posts:V$Update', 'Posts:W$Create',  'Posts:W$Update'])]
     public PostType $type;
 
     #[ORM\Column]
-    #[Assert\NotBlank(groups: ['posts:W$post'])]
-    #[Serializer\Groups(['posts:V$post', 'posts:W$post'])]
+    #[Assert\NotBlank(groups: ['Valid(Posts:W$Create)'])]
+    #[Serializer\Groups(['Posts:V$Detail', 'Posts:V$List', 'Posts:V$Create', 'Posts:V$Update', 'Posts:W$Create',  'Posts:W$Update'])]
     public string $media_url;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
-    #[Serializer\Groups(['posts:V$post'])]
+    #[Serializer\Groups(['Posts:V$Detail', 'Posts:V$List', 'Posts:V$Create', 'Posts:V$Update'])]
     public \DateTimeImmutable $createdAt;
 
-    #[ORM\OneToMany(mappedBy: 'post', targetEntity: Comments::class)]
+    #[ORM\OneToMany(mappedBy: 'post', targetEntity: Comment::class)]
     #[ApiProperty(readableLink: false, writableLink: false)]
-    #[Serializer\Groups(['comment:V$comment'])]
+    #[Serializer\Groups(['Comment:V$List'])]
     public Collection $comments;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
-    #[Serializer\Groups(['posts:V$post'])]
+    #[Serializer\Groups(['Posts:V$Detail', 'Posts:V$List', 'Posts:V$Create', 'Posts:V$Update'])]
     public \DateTimeImmutable $updatedAt;
 
     public function __construct()
@@ -125,7 +119,7 @@ class Posts
         $this->comments = new ArrayCollection();
         $this->createdAt = new \DateTimeImmutable();
         $this->updatedAt = new \DateTimeImmutable();
-        $this->type = PostType::BLOG;
+        $this->type = PostType::blog;
     }
 
     #[ORM\PrePersist]

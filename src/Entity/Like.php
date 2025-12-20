@@ -16,7 +16,6 @@ use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 
 #[ORM\Entity]
 #[ORM\HasLifecycleCallbacks]
-#[ORM\Table(name: '`likes`')]
 #[UniqueEntity(
     fields: ['user', 'post'],
     message: 'You have already liked this post.',
@@ -25,18 +24,16 @@ use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 #[ApiResource(
     operations: [
         new Post(
-            uriTemplate: '/like',
             security: "is_granted('ROLE_USER')",
             processor: LikeProcessor::class,
-            normalizationContext: ['groups' => ['like:read']],
-            denormalizationContext: ['groups' => ['like:write']],
-            validationContext: ['groups' => ['like:write']],
+            normalizationContext: ['groups' => ['Like:V$Create']],
+            denormalizationContext: ['groups' => ['Like:W$Create']],
+            validationContext: ['groups' => ['Default', 'Valid(Like:W$Create)']],
         ),
 
         new Delete(
             uriTemplate: '/dislike/{id}',
             security: "is_granted('ROLE_USER') and object.user == user",
-            denormalizationContext: ['groups' => ['like:delete']],
         ),
     ],
 )]
@@ -47,22 +44,22 @@ class Like
     #[ORM\Column(type: 'uuid', unique: true)]
     #[ORM\GeneratedValue(strategy: 'CUSTOM')]
     #[ORM\CustomIdGenerator(class: 'doctrine.uuid_generator')]
-    #[Serializer\Groups(['like:read'])]
+    #[Serializer\Groups(['Like:V$Create'])]
     public string $id;
 
     #[ORM\ManyToOne(targetEntity: User::class)]
     #[ORM\JoinColumn(nullable: false)]
-    #[Serializer\Groups(['like:read'])]
+    #[Serializer\Groups(['Like:V$Create'])]
     public User $user;
 
     #[ORM\ManyToOne(targetEntity: Posts::class)]
     #[ORM\JoinColumn(nullable: false)]
-    #[Assert\NotBlank(groups: ['like:write'])]
-    #[Serializer\Groups(['like:read', 'like:write'])]
+    #[Assert\NotBlank(groups: ['Valid(Like:W$Create)'])]
+    #[Serializer\Groups(['Like:V$Create', 'Like:W$Create'])]
     public Posts $post;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
-    #[Serializer\Groups(['like:read'])]
+    #[Serializer\Groups(['Like:V$Create'])]
     public \DateTimeImmutable $createdAt;
 
     public function __construct()

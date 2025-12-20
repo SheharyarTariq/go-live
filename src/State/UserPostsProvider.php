@@ -8,7 +8,9 @@ use App\Entity\Posts;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
-
+/**
+ * @implements ProviderInterface<Posts>
+ */
 class UserPostsProvider implements ProviderInterface
 {
     public function __construct(
@@ -18,18 +20,16 @@ class UserPostsProvider implements ProviderInterface
 
     public function provide(Operation $operation, array $uriVariables = [], array $context = []): object|array|null
     {
-        // Get the currently authenticated user
-        $currentUser = $this->security->getUser();
+        $myUser = $this->security->getUser();
 
-        if (!$currentUser) {
+        if (!$myUser) {
             throw new AccessDeniedHttpException('You must be authenticated to access this resource');
         }
 
-        // Fetch posts for the authenticated user
         $posts = $this->entityManager->getRepository(Posts::class)
             ->createQueryBuilder('p')
             ->where('p.user_id = :user')
-            ->setParameter('user', $currentUser)
+            ->setParameter('user', $myUser)
             ->orderBy('p.createdAt', 'DESC')
             ->getQuery()
             ->getResult();

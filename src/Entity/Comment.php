@@ -13,65 +13,60 @@ use Symfony\Component\Validator\Constraints as Assert;
 use App\State\CommentProcessor;
 use App\Entity\User;
 use App\Entity\Posts;
-use Dom\Comment;
-use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 
 use ApiPlatform\Metadata\Link;
 
 #[ORM\Entity]
 #[ORM\HasLifecycleCallbacks]
-#[ORM\Table(name: '`comments`')]
 #[ApiResource(
     operations: [
         new GetCollection(
-            uriTemplate: '/posts/{postId}/comments',
+            uriTemplate: '/posts/{postId}/comment',
             uriVariables: [
                 'postId' => new Link(fromClass: Posts::class, fromProperty: 'comments')
             ],
-            normalizationContext: ['groups' => ['comment:V$comments']],
+            normalizationContext: ['groups' => ['Comment:V$List']],
         ),
         new Post(
-            uriTemplate: '/comment',
             security: "is_granted('ROLE_USER')",
             processor: CommentProcessor::class,
-            normalizationContext: ['groups' => ['comment:V$comment']],
-            denormalizationContext: ['groups' => ['comment:W$comment']],
-            validationContext: ['groups' => ['comment:write']],
+            normalizationContext: ['groups' => ['Comment:V$Create']],
+            denormalizationContext: ['groups' => ['Comment:W$Create']],
+            validationContext: ['groups' => ['Default', 'Valid(Comment:W$Create)']],
         ),
         new Delete(
-            uriTemplate: '/comment/{id}',
             security: "is_granted('ROLE_USER') and object.user == user",
         ),
     ],
 )]
 
-class Comments
+class Comment
 {
     #[ORM\Id]
     #[ORM\Column(type: 'uuid', unique: true)]
     #[ORM\GeneratedValue(strategy: 'CUSTOM')]
     #[ORM\CustomIdGenerator(class: 'doctrine.uuid_generator')]
-    #[Serializer\Groups(['comment:V$comment', 'comment:V$comments'])]
+    #[Serializer\Groups(['Comment:V$Create', 'Comment:V$List'])]
     public string $id;
 
     #[ORM\ManyToOne(targetEntity: User::class)]
     #[ORM\JoinColumn(nullable: false)]
-    #[Serializer\Groups(['comment:V$comment'])]
+    #[Serializer\Groups(['Comment:V$Create'])]
     public User $user;
 
     #[ORM\ManyToOne(targetEntity: Posts::class, inversedBy: 'comments')]
     #[ORM\JoinColumn(nullable: false)]
-    #[Assert\NotBlank(groups: ['comment:write'])]
-    #[Serializer\Groups(['comment:V$comment', 'comment:W$comment'])]
+    #[Assert\NotBlank(groups: ['Valid(Comment:W$Create)'])]
+    #[Serializer\Groups(['Comment:V$Create', 'Comment:W$Create'])]
     public Posts $post;
 
     #[ORM\Column(type: 'text')]
-    #[Assert\NotBlank(groups: ['comment:write'])]
-    #[Serializer\Groups(['comment:V$comment', 'comment:W$comment', 'comment:V$comments'])]
+    #[Assert\NotBlank(groups: ['Valid(Comment:W$Create)'])]
+    #[Serializer\Groups(['Comment:V$Create', 'Comment:W$Create', 'Comment:V$List'])]
     public string $content;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
-    #[Serializer\Groups(['comment:V$comment'])]
+    #[Serializer\Groups(['Comment:V$Create'])]
     public \DateTimeImmutable $createdAt;
 
     public function __construct()
