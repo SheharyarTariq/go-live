@@ -9,7 +9,7 @@ use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Webmozart\Assert\Assert;
 
-class PostProcessor implements ProcessorInterface
+class PostUpdateProcessor implements ProcessorInterface
 {
     public function __construct(
         private Security $security,
@@ -22,9 +22,20 @@ class PostProcessor implements ProcessorInterface
         Assert::isInstanceOf($data, Posts::class, 'Expected Posts entity');
         // if ($data instanceof Posts) {
             $myUser = $this->security->getUser();
-                // For POST (create), set the user_id to the current authenticated user
+            // For PUT (update), verify ownership
+            // Check if the post already has a user_id set (from database)
+            if (isset($data->user_id)) {
+                // Verify that the post belongs to the current user
+                if ($data->user_id !== $myUser) {
+                    throw new \Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException(
+                        'You can only update your own posts.'
+                    );
+                }
+            } else {
+                // If somehow user_id is not set, set it to current user
+                // This shouldn't normally happen for PUT operations
                 $data->user_id = $myUser;
-           
+            }
         // }
 
         return $this->persistProcessor->process($data, $operation, $uriVariables, $context);
